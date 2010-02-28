@@ -34,7 +34,7 @@ Extra-Source-Files:
 
 Library
   Build-Depends:
-    base >= 3 && < 5, vector == 0.5.*
+    base >= 3 && < 5, vector == 0.5.*, primitive == 0.2.*
   Exposed-Modules:
     Math.Optimization.Algorithms.HagerZhang05
   Include-Dirs:
@@ -45,7 +45,11 @@ Library
     cg_user.h
   Extensions:
     CPP,
-    ForeignFunctionInterface
+    ForeignFunctionInterface,
+    EmptyDataDecls,
+    GADTs,
+    Rank2Types,
+    FlexibleContexts
   Build-Tools:     hsc2hs
   Extra-Libraries: m
   CC-Options:      -O3

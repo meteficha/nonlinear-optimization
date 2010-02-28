@@ -8,7 +8,7 @@
 -- Portability : portable
 --
 -- This module implements the algorithms described by Hager and
--- Zhang [1].  We use bindings to CG_DESCENT library by the same
+-- Zhang [1].  We use bindings to @CG_DESCENT@ library by the same
 -- authors, version 3.0 from 18/05/2008 [2].  The library code is
 -- also licensed under the terms of the GPL.
 --
@@ -17,15 +17,27 @@
 --   /search./ Society of Industrial and Applied Mathematics
 --   Journal on Optimization, 16 (2005), 170-192.
 --
--- * [2] http://www.math.ufl.edu/~hager/papers/CG/CG_DESCENT-C-3.0.tar.gz
+-- * [2] <http://www.math.ufl.edu/~hager/papers/CG/CG_DESCENT-C-3.0.tar.gz>
 --
 --------------------------------------------------------------------------
 
 
 module Math.Optimization.Algorithms.HagerZhang05
-    (-- * Functions
+    (-- * Main function
+     -- $mainFunction
+     optimize
+     -- ** User-defined function types
+    ,Function(..)
+    ,Gradient(..)
+    ,Combined(..)
+     -- ** Kinds of function types
+    ,Simple
+    ,Mutable
+     -- * Result and statistics
+    ,Result(..)
+    ,Statistics(..)
      -- * Options
-     defaultParameters
+    ,defaultParameters
     ,Parameters(..)
     ,Verbose(..)
     ,LineSearch(..)
@@ -35,44 +47,331 @@ module Math.Optimization.Algorithms.HagerZhang05
     ,TechParameters(..)
     ) where
 
+import qualified Data.Vector.Generic as G
+import qualified Data.Vector.Generic.Mutable as GM
+import qualified Data.Vector.Storable as S
+import qualified Data.Vector.Storable.Mutable as SM
+import Control.Exception (bracket)
+import Control.Monad.Primitive (PrimMonad(..))
 import Foreign
 import Foreign.C
 #include "cg_user.h"
+
+-- $mainFunction
+-- Please pay close attention to the types of @Vector@s and
+-- @MVetor@s being used below.  They may come from
+-- "Data.Vector.Generic"/"Data.Vector.Generic.Mutable" or from
+-- "Data.Vector.Storable"/"Data.Vector.Storable.Mutable".  The
+-- rule of thumb is that input pure vectors are @Generic@ and
+-- everything else is @Storable@.
+
+
+-- | Run the @CG_DESCENT@ optimizer and try to minimize the
+-- function.
+optimize :: (G.Vector v Double)
+         => Parameters          -- ^ How should we optimize.
+         -> Double              -- ^ @grad_tol@, see 'stopRules'.
+         -> v Double            -- ^ Initial guess.
+         -> Function t1         -- ^ Function to be minimized.
+         -> Gradient t2         -- ^ Gradient of the function.
+         -> Maybe (Combined t3) -- ^ (Optional) Combined function computing
+                                --   both the function and its gradient.
+         -> IO (S.Vector Double, Result, Statistics)
+optimize params grad_tol initial f g c = do
+  -- Mutable vector used for initial guess and final solution.
+  let n = G.length initial
+  x <- GM.unstream $ G.stream initial
+
+  -- Convert user-provided functions.
+  let mf = mutableF f
+      mg = mutableG g
+      mc = maybe (combine mf mg) mutableC c
+      cf = prepareF mf
+      cg = prepareG mg
+      cc = prepareC mc
+
+  -- Allocate everything.
+  (ret, stats) <-
+    SM.unsafeWith x                            $ \x_ptr     ->
+    alloca                                     $ \stats_ptr ->
+    alloca                                     $ \param_ptr ->
+    bracket (mkCFunction cf) freeHaskellFunPtr $ \cf_ptr    ->
+    bracket (mkCGradient cg) freeHaskellFunPtr $ \cg_ptr    ->
+    bracket (mkCCombined cc) freeHaskellFunPtr $ \cc_ptr    ->
+    allocaArray (4*n)                          $ \work_ptr  -> do
+      -- Go to C land.
+      poke param_ptr params
+      ret <- cg_descent x_ptr (fromIntegral n)
+               stats_ptr param_ptr grad_tol
+               cf_ptr cg_ptr cc_ptr work_ptr
+      stats <- peek stats_ptr
+      return (intToResult ret, stats)
+
+  -- Retrive solution and return.
+  x' <- G.unsafeFreeze x
+  return $ ret `seq` (x', ret, stats)
+
+type CFunction = Ptr Double ->               CInt -> IO Double
+type CGradient = Ptr Double -> Ptr Double -> CInt -> IO ()
+type CCombined = Ptr Double -> Ptr Double -> CInt -> IO Double
+foreign import ccall safe "cg_user.h"
+    cg_descent :: Ptr Double
+               -> CInt
+               -> Ptr Statistics
+               -> Ptr Parameters
+               -> Double
+               -> FunPtr CFunction
+               -> FunPtr CGradient
+               -> FunPtr CCombined
+               -> Ptr Double
+               -> IO CInt
+foreign import ccall "wrapper" mkCFunction :: CFunction -> IO (FunPtr CFunction)
+foreign import ccall "wrapper" mkCGradient :: CGradient -> IO (FunPtr CGradient)
+foreign import ccall "wrapper" mkCCombined :: CCombined -> IO (FunPtr CCombined)
+
+
+-- | Phantom type for simple pure functions.
+data Simple
+-- | Phantom type for functions using mutable data.
+data Mutable
+
+-- | Function calculating the value of the objective function @f@
+-- at a point @x@.
+data Function t where
+    VFunction :: G.Vector v Double
+              => (v Double -> Double)
+              -> Function Simple
+    MFunction :: (forall m. PrimMonad m
+                  => SM.MVector (PrimState m) Double
+                  -> m Double)
+              -> Function Mutable
+
+mutableF :: Function t -> Function Mutable
+mutableF (VFunction f) = MFunction f'
+    where
+      f' mx = do
+        -- Copy the input to an immutable vector.
+        let s = GM.length mx
+        mz <- GM.new s
+        let go i | i > s     = return ()
+                 | otherwise = GM.unsafeRead mx i >>=
+                               GM.unsafeWrite mz i >> go (i+1)
+        go 0
+        z <- G.unsafeFreeze mz
+        -- Run the user function.
+        return (f z)
+mutableF (MFunction f) = MFunction f
+
+prepareF :: Function Mutable -> CFunction
+prepareF (MFunction f) =
+    \x_ptr n -> do
+      let n' = fromIntegral n
+      x_fptr <- newForeignPtr_ x_ptr
+      f (SM.unsafeFromForeignPtr x_fptr 0 n')
+prepareF _ = error "HagerZhang05.prepareF: never here"
+
+
+
+
+
+-- | Function calculating the value of the gradient of the
+-- objective function @f@ at a point @x@.
+--
+-- The 'MGradient' constructor uses a function receiving as
+-- parameters the point @x@ being evaluated (should not be
+-- modified) and the vector where the gradient should be written.
+data Gradient t where
+    VGradient :: G.Vector v Double
+              => (v Double -> v Double)
+              -> Gradient Simple
+    MGradient :: (forall m. PrimMonad m
+                  => SM.MVector (PrimState m) Double
+                  -> SM.MVector (PrimState m) Double
+                  -> m ())
+              -> Gradient Mutable
+mutableG :: Gradient t -> Gradient Mutable
+mutableG (VGradient f) = MGradient f'
+    where
+      f' mx mret = do
+        -- Copy the input to an immutable vector.
+        let s = GM.length mx
+        mz <- GM.new s
+        let go i | i > s     = return ()
+                 | otherwise = GM.unsafeRead mx i >>=
+                               GM.unsafeWrite mz i >> go (i+1)
+        go 0
+        z <- G.unsafeFreeze mz
+        -- Run the user function.
+        let !r = f z
+        -- Copy the output to an immutable vector
+        let s' = min s (G.length r)
+            go' i | i > s'    = return ()
+                  | otherwise = let !x = G.unsafeIndex r i
+                                in GM.unsafeWrite mret i x >> go (i+1)
+        go' 0
+mutableG (MGradient f) = MGradient f
+
+prepareG :: Gradient Mutable -> CGradient
+prepareG (MGradient f) =
+    \ret_ptr x_ptr n -> do
+      let n' = fromIntegral n
+      x_fptr   <- newForeignPtr_ x_ptr
+      ret_fptr <- newForeignPtr_ ret_ptr
+      f (SM.unsafeFromForeignPtr x_fptr   0 n')
+        (SM.unsafeFromForeignPtr ret_fptr 0 n')
+prepareG _ = error "HagerZhang05.prepareG: never here"
+
+
+
+
+
+
+
+
+
+-- | Function calculating the both the value of the objective
+-- function @f@ and its gradient at a point @x@.
+data Combined t where
+    VCombined :: G.Vector v Double
+              => (v Double -> (Double, v Double))
+              -> Combined Simple
+    MCombined :: (forall m. PrimMonad m
+                  => SM.MVector (PrimState m) Double
+                  -> SM.MVector (PrimState m) Double
+                  -> m Double)
+              -> Combined Mutable
+mutableC :: Combined t -> Combined Mutable
+mutableC (VCombined f) = MCombined f'
+    where
+      f' mx mret = do
+        -- Copy the input to an immutable vector.
+        let s = GM.length mx
+        mz <- GM.new s
+        let go i | i > s     = return ()
+                 | otherwise = GM.unsafeRead mx i >>=
+                               GM.unsafeWrite mz i >> go (i+1)
+        go 0
+        z <- G.unsafeFreeze mz
+        -- Run the user function.
+        let !(v,r) = f z
+        -- Copy the output to an immutable vector
+        let s' = min s (G.length r)
+            go' i | i > s'    = return ()
+                  | otherwise = let !x = G.unsafeIndex r i
+                                in GM.unsafeWrite mret i x >> go (i+1)
+        go' 0
+        -- Return the value
+        return v
+mutableC (MCombined f) = MCombined f
+
+prepareC :: Combined Mutable -> CCombined
+prepareC (MCombined f) =
+    \ret_ptr x_ptr n -> do
+      let n' = fromIntegral n
+      x_fptr   <- newForeignPtr_ x_ptr
+      ret_fptr <- newForeignPtr_ ret_ptr
+      f (SM.unsafeFromForeignPtr x_fptr   0 n')
+        (SM.unsafeFromForeignPtr ret_fptr 0 n')
+prepareC _ = error "HagerZhang05.prepareC: never here"
+
+-- | Combine two separated functions into a single, combined one.
+-- This is always a win for us since we save one jump from C to
+-- Haskell land.
+combine :: Function Mutable -> Gradient Mutable -> Combined Mutable
+combine (MFunction f) (MGradient g) =
+    MCombined $ \mx mret -> g mx mret >> f mx
+combine _ _ = error "HagerZhang05.combine: never here"
+
+
+
+
+data Result =
+      ToleranceStatisfied
+      -- ^ Convergence tolerance was satisfied.
+    | FunctionChange
+      -- ^ Change in function value was less than @funcEpsilon *
+      -- |f|@.
+    | MaxTotalIter
+      -- ^ Total iterations exceeded @maxItersFac * n@.
+    | NegativeSlope
+      -- ^ Slope was always negative in line search.
+    | MaxSecantIter
+      -- ^ Number of secant iterations exceed nsecant.
+    | NotDescent
+      -- ^ Search direction not a descent direction.
+    | LineSearchFailsInitial
+      -- ^ Line search fails in initial interval.
+    | LineSearchFailsBisection
+      -- ^ Line search fails during bisection.
+    | LineSearchFailsUpdate
+      -- ^ Line search fails during interval update.
+    | DebugTol
+      -- ^ Debug tolerance was on and the test failed (see 'debugTol').
+    | OutOfMemory
+      -- ^ Couldn't allocate enought temporary memory.
+    | FunctionValueNaN
+      -- ^ Function value became @NaN@.
+    | StartFunctionValueNaN
+      -- ^ Initial function value was @NaN@.
+    deriving (Eq, Ord, Show, Read, Enum)
+
+intToResult :: CInt -> Result
+intToResult (-2) = FunctionValueNaN
+intToResult (-1) = StartFunctionValueNaN
+intToResult   0  = ToleranceStatisfied
+intToResult   1  = FunctionChange
+intToResult   2  = MaxTotalIter
+intToResult   3  = NegativeSlope
+intToResult   4  = MaxSecantIter
+intToResult   5  = NotDescent
+intToResult   6  = LineSearchFailsInitial
+intToResult   7  = LineSearchFailsBisection
+intToResult   8  = LineSearchFailsUpdate
+intToResult   9  = DebugTol
+intToResult  10  = error $ "HagerZhang05.intToResult: out of memory?! how?!"
+intToResult   x  = error $ "HagerZhang05.intToResult: unknown value " ++ show x
+
+-- | Statistics given after the process finishes.
+data Statistics = Statistics {
+    finalValue :: Double
+    -- ^ Value of the function at the solution.
+    ,gradNorm :: Double
+    -- ^ Maximum absolute component of the gradient at the
+    -- solution.
+    ,totalIters :: CInt
+    -- ^ Total number of iterations.
+    ,funcEvals :: CInt
+    -- ^ Total number of function evaluations.
+    ,gradEvals :: CInt
+    -- ^ Total number of gradient evaluations.
+    } deriving (Eq, Ord, Show, Read)
+
+instance Storable Statistics where
+    sizeOf _    = #{size cg_stats}
+    alignment _ = alignment (undefined :: Double)
+    peek ptr = do
+      v_finalValue <- #{peek cg_stats, f}     ptr
+      v_gradNorm   <- #{peek cg_stats, gnorm} ptr
+      v_totalIters <- #{peek cg_stats, iter}  ptr
+      v_funcEvals  <- #{peek cg_stats, nfunc} ptr
+      v_gradEvals  <- #{peek cg_stats, ngrad} ptr
+      return Statistics {finalValue = v_finalValue
+                        ,gradNorm   = v_gradNorm
+                        ,totalIters = v_totalIters
+                        ,funcEvals  = v_funcEvals
+                        ,gradEvals  = v_gradEvals}
+    poke ptr s = do
+      #{poke cg_stats, f}     ptr (finalValue s)
+      #{poke cg_stats, gnorm} ptr (gradNorm s)
+      #{poke cg_stats, iter}  ptr (totalIters s)
+      #{poke cg_stats, nfunc} ptr (funcEvals s)
+      #{poke cg_stats, ngrad} ptr (gradEvals s)
 
 
 
 -- | Default parameters.  See the documentation for 'Parameters'
 -- and 'TechParameters' to see what are the defaults.
 defaultParameters :: Parameters
-defaultParameters =
-    Parameters {printFinal     = True
-               ,printParams    = False
-               ,verbose        = Quiet
-               ,lineSearch     = AutoSwitch 1.0e-3
-               ,qdecay         = 0.7
-               ,stopRules      = DefaultStopRule 0.0
-               ,estimateError  = RelativeEpsilon 1.0e-6
-               ,quadraticStep  = Just 1.0e-12
-               ,debugTol       = Nothing
-               ,initialStep    = Nothing
-               ,maxItersFac    = 500
-               ,nexpand        = 50
-               ,nsecant        = 50
-               ,restartFac     = 1
-               ,funcEpsilon    = 0.0
-               ,nanRho         = 1.3
-               ,techParameters = TechParameters {techDelta = 0.1
-                                                ,techSigma = 0.9
-                                                ,techGamma = 0.66
-                                                ,techRho   = 5.0
-                                                ,techEta   = 1.0e-2
-                                                ,techPsi0  = 1.0e-2
-                                                ,techPsi1  = 0.1
-                                                ,techPsi2  = 2.0}}
-{-
--- | Using cg_default we were getting @maxItersFac = -1@ and
--- @restartFac = 0@.  Those defaults were fixed and the resulting
--- structure was copy-pasted above.
 defaultParameters =
     unsafePerformIO $ do
       alloca $ \ptr -> do
@@ -81,7 +380,6 @@ defaultParameters =
 {-# NOINLINE defaultParameters #-}
 foreign import ccall unsafe "cg_user.h"
   cg_default :: Ptr Parameters -> IO ()
--}
 
 
 -- | Parameters given to the optimizer.
@@ -135,10 +433,10 @@ data Parameters = Parameters {
     -- step is programatically calculated.  Defaults to
     -- @Nothing@.
 
-    ,maxItersFac :: CInt
+    ,maxItersFac :: Double
     -- ^ Defines the maximum number of iterations.  The process
     -- is aborted when @maxItersFac * n@ iterations are done, where
-    -- @n@ is the number of dimensions.  Defaults to @500@.
+    -- @n@ is the number of dimensions.  Defaults to infinity.
 
     ,nexpand :: CInt
     -- ^ Maximum number of times the bracketing interval grows or
@@ -148,7 +446,7 @@ data Parameters = Parameters {
     -- ^ Maximum number of secant iterations in line search.
     -- Defaults to @50@.
 
-    ,restartFac :: CInt
+    ,restartFac :: Double
     -- ^ Restart the conjugate gradient method after @restartFac
     -- * n@ iterations. Defaults to @1@.
 
