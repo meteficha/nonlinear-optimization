@@ -23,8 +23,10 @@
 
 
 module Math.Optimization.Algorithms.HagerZhang05
-    (-- * Options
-     Parameters(..)
+    (-- * Functions
+     -- * Options
+     defaultParameters
+    ,Parameters(..)
     ,Verbose(..)
     ,LineSearch(..)
     ,StopRules(..)
@@ -36,6 +38,51 @@ module Math.Optimization.Algorithms.HagerZhang05
 import Foreign
 import Foreign.C
 #include "cg_user.h"
+
+
+
+-- | Default parameters.  See the documentation for 'Parameters'
+-- and 'TechParameters' to see what are the defaults.
+defaultParameters :: Parameters
+defaultParameters =
+    Parameters {printFinal     = True
+               ,printParams    = False
+               ,verbose        = Quiet
+               ,lineSearch     = AutoSwitch 1.0e-3
+               ,qdecay         = 0.7
+               ,stopRules      = DefaultStopRule 0.0
+               ,estimateError  = RelativeEpsilon 1.0e-6
+               ,quadraticStep  = Just 1.0e-12
+               ,debugTol       = Nothing
+               ,initialStep    = Nothing
+               ,maxItersFac    = 500
+               ,nexpand        = 50
+               ,nsecant        = 50
+               ,restartFac     = 1
+               ,funcEpsilon    = 0.0
+               ,nanRho         = 1.3
+               ,techParameters = TechParameters {techDelta = 0.1
+                                                ,techSigma = 0.9
+                                                ,techGamma = 0.66
+                                                ,techRho   = 5.0
+                                                ,techEta   = 1.0e-2
+                                                ,techPsi0  = 1.0e-2
+                                                ,techPsi1  = 0.1
+                                                ,techPsi2  = 2.0}}
+{-
+-- | Using cg_default we were getting @maxItersFac = -1@ and
+-- @restartFac = 0@.  Those defaults were fixed and the resulting
+-- structure was copy-pasted above.
+defaultParameters =
+    unsafePerformIO $ do
+      alloca $ \ptr -> do
+        cg_default ptr
+        peek ptr
+{-# NOINLINE defaultParameters #-}
+foreign import ccall unsafe "cg_user.h"
+  cg_default :: Ptr Parameters -> IO ()
+-}
+
 
 -- | Parameters given to the optimizer.
 data Parameters = Parameters {
@@ -91,7 +138,7 @@ data Parameters = Parameters {
     ,maxItersFac :: CInt
     -- ^ Defines the maximum number of iterations.  The process
     -- is aborted when @maxItersFac * n@ iterations are done, where
-    -- @n@ is the number of dimensions.  Defaults to @maxBound@.
+    -- @n@ is the number of dimensions.  Defaults to @500@.
 
     ,nexpand :: CInt
     -- ^ Maximum number of times the bracketing interval grows or
