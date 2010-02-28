@@ -307,8 +307,6 @@ data Result =
       -- ^ Line search fails during interval update.
     | DebugTol
       -- ^ Debug tolerance was on and the test failed (see 'debugTol').
-    | OutOfMemory
-      -- ^ Couldn't allocate enought temporary memory.
     | FunctionValueNaN
       -- ^ Function value became @NaN@.
     | StartFunctionValueNaN
