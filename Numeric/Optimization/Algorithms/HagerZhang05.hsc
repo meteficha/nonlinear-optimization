@@ -1,5 +1,5 @@
 ---------------------------------------------------------------------------
--- | Module    : Math.Statistics.Dirichlet.Mixture
+-- | Module    : Numeric.Statistics.Dirichlet.Mixture
 -- Copyright   : (c) 2009 Felipe Lessa
 -- License     : GPL
 --

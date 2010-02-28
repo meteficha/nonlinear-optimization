@@ -26,6 +26,8 @@ Description:
     We use the @vector@ package to represent vectors and
     matrices, although it would be possible to use something like
     @hmatrix@ easily.
+    .
+    Currently only CM_DESCENT method is implemented.
 Extra-Source-Files:
     CG_DESCENT-C-3.0/cg_descent.c,
     CG_DESCENT-C-3.0/cg_descent.h,
@@ -37,7 +39,7 @@ Library
     base >= 3 && < 5, vector >= 0.5 && < 0.6,
     primitive >= 0.2 && < 0.3
   Exposed-Modules:
-    Math.Optimization.Algorithms.HagerZhang05
+    Numeric.Optimization.Algorithms.HagerZhang05
   Include-Dirs:
     CG_DESCENT-C-3.0
   C-Sources:
