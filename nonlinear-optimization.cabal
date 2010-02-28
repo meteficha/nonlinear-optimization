@@ -1,4 +1,4 @@
-Cabal-Version:       >= 1.2
+Cabal-Version:       >= 1.2.3
 Build-Type:          Simple
 Tested-With:         GHC
 Category:            Math
@@ -34,7 +34,8 @@ Extra-Source-Files:
 
 Library
   Build-Depends:
-    base >= 3 && < 5, vector == 0.5.*, primitive == 0.2.*
+    base >= 3 && < 5, vector >= 0.5 && < 0.6,
+    primitive >= 0.2 && < 0.3
   Exposed-Modules:
     Math.Optimization.Algorithms.HagerZhang05
   Include-Dirs:
@@ -52,6 +53,5 @@ Library
     FlexibleContexts
   Build-Tools:     hsc2hs
   Extra-Libraries: m
-  CC-Options:      -O3
   GHC-Options:     -Wall
 
