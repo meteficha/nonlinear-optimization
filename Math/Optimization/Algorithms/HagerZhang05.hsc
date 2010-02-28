@@ -40,17 +40,18 @@ import Foreign.C
 -- | Parameters given to the optimizer.
 data Parameters = Parameters {
     printFinal :: Bool
-    -- ^ Print final statistics to @stdout@.
+    -- ^ Print final statistics to @stdout@.  Defaults to @True@.
 
     ,printParams :: Bool
-    -- ^ Print parameters to @stdout@ before starting.
+    -- ^ Print parameters to @stdout@ before starting.  Defaults to @False@
 
     ,verbose :: Verbose
     -- ^ How verbose we should be while computing.  Everything is
-    -- printed to @stdout@.
+    -- printed to @stdout@. Defaults to 'Quiet'.
 
     ,lineSearch :: LineSearch
-    -- ^ What kind of line search should be used.
+    -- ^ What kind of line search should be used.  Defaults to
+    -- @AutoSwitch 1e-3@.
 
     ,qdecay :: Double
     -- ^ Factor in @[0, 1]@ used to compute average cost
@@ -58,54 +59,61 @@ data Parameters = Parameters {
     --
     -- > Q_k = 1 + (qdecay)Q_{k-1},   Q_0 = 0
     -- > C_k = C_{k-1} + (|f_k| - C_{k-1})/Q_k
+    --
+    -- Defaults to @0.7@.
 
     ,stopRules :: StopRules
     -- ^ Stop rules that define when the iterations should end.
+    -- Defaults to @DefaultStopRule 0@.
 
     ,estimateError :: EstimateError
-    -- ^ How to calculate the estimated error in the function value.
+    -- ^ How to calculate the estimated error in the function
+    -- value.  Defaults to @RelativeEpsilon 1e-6@.
 
     ,quadraticStep :: Maybe Double
     -- ^ When to attempt quadratic interpolation in line search.
     -- If @Nothing@ then never try a quadratic interpolation
     -- step.  If @Just cutoff@, then attemp quadratic
     -- interpolation in line search when @|f_{k+1} - f_k| / f_k
-    -- <= cutoff@.
+    -- <= cutoff@.  Defaults to @Just 1e-12@.
 
     ,debugTol :: Maybe Double
     -- ^ If @Just tol@, then always check that @f_{k+1} - f_k <=
     -- tol * C_k@. Otherwise, if @Nothing@ then no checking of
-    -- function values is done.
+    -- function values is done.  Defaults to @Nothing@.
 
     ,initialStep :: Maybe Double
     -- ^ If @Just step@, then use @step@ as the initial step of
     -- the line search.  Otherwise, if @Nothing@ then the initial
-    -- step is programatically calculated.
+    -- step is programatically calculated.  Defaults to
+    -- @Nothing@.
 
     ,maxItersFac :: Int
     -- ^ Defines the maximum number of iterations.  The process
     -- is aborted when @maxItersFac * n@ iterations are done, where
-    -- @n@ is the number of dimensions.
+    -- @n@ is the number of dimensions.  Defaults to @maxBound@.
 
     ,nexpand :: Int
     -- ^ Maximum number of times the bracketing interval grows or
-    -- shrinks in the line search.
+    -- shrinks in the line search.  Defaults to @50@.
 
     ,nsecant :: Int
     -- ^ Maximum number of secant iterations in line search.
+    -- Defaults to @50@.
 
     ,restartFac :: Int
     -- ^ Restart the conjugate gradient method after @restartFac
-    -- * n@ iterations.
+    -- * n@ iterations. Defaults to @1@.
 
     ,funcEpsilon :: Double
     -- ^ Stop when @-alpha * dphi0@, the estimated change in
     -- function value, is less than @funcEpsilon * |f|@.
+    -- Defaults to @0@.
 
     ,nanRho :: Double
     -- ^ After encountering @NaN@ while calculating the step
     -- length, growth factor when searching for a bracketing
-    -- interval.
+    -- interval.  Defaults to @1.3@.
 
     ,techParameters :: TechParameters
     -- ^ Technical parameters which you probably should not
@@ -117,25 +125,28 @@ data Parameters = Parameters {
 -- you can tune these parameters.
 data TechParameters = TechParameters {
     techDelta :: Double
-    -- ^ Wolfe line search parameter.
+    -- ^ Wolfe line search parameter.  Defaults to @0.1@.
     ,techSigma :: Double
-    -- ^ Wolfe line search parameter.
+    -- ^ Wolfe line search parameter.  Defaults to @0.9@.
     ,techGamma :: Double
-    -- ^ Decay factor for bracket interval width.
+    -- ^ Decay factor for bracket interval width.  Defaults to
+    -- @0.66@.
     ,techRho :: Double
     -- ^ Growth factor when searching for initial bracketing
-    -- interval.
+    -- interval.  Defaults to @5@.
     ,techEta :: Double
     -- ^ Lower bound for the conjugate gradient update parameter
-    -- @beta_k@ is @techEta * ||d||_2@.
+    -- @beta_k@ is @techEta * ||d||_2@.  Defaults to @0.01@.
     ,techPsi0 :: Double
-    -- ^ Factor used in starting guess for iteration 1.
+    -- ^ Factor used in starting guess for iteration 1.  Defaults
+    -- to @0.01@.
     ,techPsi1 :: Double
     -- ^ In performing a QuadStep, we evaluate the function at
-    -- @psi1 * previous step@.
+    -- @psi1 * previous step@.  Defaults to @0.1@.
     ,techPsi2 :: Double
     -- ^ When starting a new CG iteration, our initial guess for
     -- the line search stepsize is @psi2 * previous step@.
+    -- Defaults to @2@.
     } deriving (Eq, Ord, Show, Read)
 
 
@@ -167,15 +178,15 @@ data LineSearch =
 
 -- | Stop rules used to decided when to stop iterating.
 data StopRules =
-      DefaultStopRule Double Double
-      -- ^ @DefaultStopRule grad_tol stop_fac@ stops when
+      DefaultStopRule Double
+      -- ^ @DefaultStopRule stop_fac@ stops when
       --
       -- > |g_k|_infty <= max(grad_tol, |g_0|_infty * stop_fac)
       --
       -- where @|g_i|_infty@ is the maximum absolute component of
       -- the gradient at the @i@-th step.
-    | AlternativeStopRule Double
-      -- ^ @AlternativeStopRule grad_tol@ stops when
+    | AlternativeStopRule
+      -- ^ @AlternativeStopRule@ stops when
       --
       -- > |g_k|_infty <= grad_tol * (1 + |f_k|)
       deriving (Eq, Ord, Show, Read)
