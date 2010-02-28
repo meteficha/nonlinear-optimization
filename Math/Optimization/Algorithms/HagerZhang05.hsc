@@ -53,7 +53,7 @@ data Parameters = Parameters {
     -- ^ What kind of line search should be used.  Defaults to
     -- @AutoSwitch 1e-3@.
 
-    ,qdecay :: Double
+    ,qdecay :: CDouble
     -- ^ Factor in @[0, 1]@ used to compute average cost
     -- magnitude @C_k@ as follows:
     --
@@ -70,47 +70,47 @@ data Parameters = Parameters {
     -- ^ How to calculate the estimated error in the function
     -- value.  Defaults to @RelativeEpsilon 1e-6@.
 
-    ,quadraticStep :: Maybe Double
+    ,quadraticStep :: Maybe CDouble
     -- ^ When to attempt quadratic interpolation in line search.
     -- If @Nothing@ then never try a quadratic interpolation
     -- step.  If @Just cutoff@, then attemp quadratic
     -- interpolation in line search when @|f_{k+1} - f_k| / f_k
     -- <= cutoff@.  Defaults to @Just 1e-12@.
 
-    ,debugTol :: Maybe Double
+    ,debugTol :: Maybe CDouble
     -- ^ If @Just tol@, then always check that @f_{k+1} - f_k <=
     -- tol * C_k@. Otherwise, if @Nothing@ then no checking of
     -- function values is done.  Defaults to @Nothing@.
 
-    ,initialStep :: Maybe Double
+    ,initialStep :: Maybe CDouble
     -- ^ If @Just step@, then use @step@ as the initial step of
     -- the line search.  Otherwise, if @Nothing@ then the initial
     -- step is programatically calculated.  Defaults to
     -- @Nothing@.
 
-    ,maxItersFac :: Int
+    ,maxItersFac :: CInt
     -- ^ Defines the maximum number of iterations.  The process
     -- is aborted when @maxItersFac * n@ iterations are done, where
     -- @n@ is the number of dimensions.  Defaults to @maxBound@.
 
-    ,nexpand :: Int
+    ,nexpand :: CInt
     -- ^ Maximum number of times the bracketing interval grows or
     -- shrinks in the line search.  Defaults to @50@.
 
-    ,nsecant :: Int
+    ,nsecant :: CInt
     -- ^ Maximum number of secant iterations in line search.
     -- Defaults to @50@.
 
-    ,restartFac :: Int
+    ,restartFac :: CInt
     -- ^ Restart the conjugate gradient method after @restartFac
     -- * n@ iterations. Defaults to @1@.
 
-    ,funcEpsilon :: Double
+    ,funcEpsilon :: CDouble
     -- ^ Stop when @-alpha * dphi0@, the estimated change in
     -- function value, is less than @funcEpsilon * |f|@.
     -- Defaults to @0@.
 
-    ,nanRho :: Double
+    ,nanRho :: CDouble
     -- ^ After encountering @NaN@ while calculating the step
     -- length, growth factor when searching for a bracketing
     -- interval.  Defaults to @1.3@.
@@ -124,30 +124,31 @@ data Parameters = Parameters {
 -- You should read the papers of @CG_DESCENT@ to understand how
 -- you can tune these parameters.
 data TechParameters = TechParameters {
-    techDelta :: Double
+    techDelta :: CDouble
     -- ^ Wolfe line search parameter.  Defaults to @0.1@.
-    ,techSigma :: Double
+    ,techSigma :: CDouble
     -- ^ Wolfe line search parameter.  Defaults to @0.9@.
-    ,techGamma :: Double
+    ,techGamma :: CDouble
     -- ^ Decay factor for bracket interval width.  Defaults to
     -- @0.66@.
-    ,techRho :: Double
+    ,techRho :: CDouble
     -- ^ Growth factor when searching for initial bracketing
     -- interval.  Defaults to @5@.
-    ,techEta :: Double
+    ,techEta :: CDouble
     -- ^ Lower bound for the conjugate gradient update parameter
     -- @beta_k@ is @techEta * ||d||_2@.  Defaults to @0.01@.
-    ,techPsi0 :: Double
+    ,techPsi0 :: CDouble
     -- ^ Factor used in starting guess for iteration 1.  Defaults
     -- to @0.01@.
-    ,techPsi1 :: Double
+    ,techPsi1 :: CDouble
     -- ^ In performing a QuadStep, we evaluate the function at
     -- @psi1 * previous step@.  Defaults to @0.1@.
-    ,techPsi2 :: Double
+    ,techPsi2 :: CDouble
     -- ^ When starting a new CG iteration, our initial guess for
     -- the line search stepsize is @psi2 * previous step@.
     -- Defaults to @2@.
     } deriving (Eq, Ord, Show, Read)
+
 
 
 -- | How verbose we should be.
@@ -166,7 +167,7 @@ data Verbose =
 data LineSearch =
       ApproximateWolfe
       -- ^ Use approximate Wolfe line search.
-    | AutoSwitch Double
+    | AutoSwitch CDouble
       -- ^ Use ordinary Wolfe line search, switch to approximate
       -- Wolfe when
       --
@@ -178,7 +179,7 @@ data LineSearch =
 
 -- | Stop rules used to decided when to stop iterating.
 data StopRules =
-      DefaultStopRule Double
+      DefaultStopRule CDouble
       -- ^ @DefaultStopRule stop_fac@ stops when
       --
       -- > |g_k|_infty <= max(grad_tol, |g_0|_infty * stop_fac)
@@ -193,8 +194,8 @@ data StopRules =
 
 -- | How to calculate the estimated error in the function value.
 data EstimateError =
-      AbsoluteEpsilon Double
+      AbsoluteEpsilon CDouble
       -- ^ @AbsoluteEpsilon eps@ estimates the error as @eps@.
-    | RelativeEpsilon Double
+    | RelativeEpsilon CDouble
       -- ^ @RelativeEpsilon eps@ estimates the error as @eps * C_k@.
       deriving (Eq, Ord, Show, Read)
