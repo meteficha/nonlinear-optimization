@@ -53,7 +53,7 @@ data Parameters = Parameters {
     -- ^ What kind of line search should be used.  Defaults to
     -- @AutoSwitch 1e-3@.
 
-    ,qdecay :: CDouble
+    ,qdecay :: Double
     -- ^ Factor in @[0, 1]@ used to compute average cost
     -- magnitude @C_k@ as follows:
     --
@@ -70,19 +70,19 @@ data Parameters = Parameters {
     -- ^ How to calculate the estimated error in the function
     -- value.  Defaults to @RelativeEpsilon 1e-6@.
 
-    ,quadraticStep :: Maybe CDouble
+    ,quadraticStep :: Maybe Double
     -- ^ When to attempt quadratic interpolation in line search.
     -- If @Nothing@ then never try a quadratic interpolation
     -- step.  If @Just cutoff@, then attemp quadratic
     -- interpolation in line search when @|f_{k+1} - f_k| / f_k
     -- <= cutoff@.  Defaults to @Just 1e-12@.
 
-    ,debugTol :: Maybe CDouble
+    ,debugTol :: Maybe Double
     -- ^ If @Just tol@, then always check that @f_{k+1} - f_k <=
     -- tol * C_k@. Otherwise, if @Nothing@ then no checking of
     -- function values is done.  Defaults to @Nothing@.
 
-    ,initialStep :: Maybe CDouble
+    ,initialStep :: Maybe Double
     -- ^ If @Just step@, then use @step@ as the initial step of
     -- the line search.  Otherwise, if @Nothing@ then the initial
     -- step is programatically calculated.  Defaults to
@@ -105,12 +105,12 @@ data Parameters = Parameters {
     -- ^ Restart the conjugate gradient method after @restartFac
     -- * n@ iterations. Defaults to @1@.
 
-    ,funcEpsilon :: CDouble
+    ,funcEpsilon :: Double
     -- ^ Stop when @-alpha * dphi0@, the estimated change in
     -- function value, is less than @funcEpsilon * |f|@.
     -- Defaults to @0@.
 
-    ,nanRho :: CDouble
+    ,nanRho :: Double
     -- ^ After encountering @NaN@ while calculating the step
     -- length, growth factor when searching for a bracketing
     -- interval.  Defaults to @1.3@.
@@ -122,7 +122,7 @@ data Parameters = Parameters {
 
 instance Storable Parameters where
     sizeOf _    = #{size cg_parameter}
-    alignment _ = alignment (undefined :: CDouble)
+    alignment _ = alignment (undefined :: Double)
     peek ptr    = do
       v_printFinal    <- #{peek cg_parameter, PrintFinal}  ptr
       v_printParams   <- #{peek cg_parameter, PrintParms}  ptr
@@ -251,26 +251,26 @@ instance Storable Parameters where
 -- You should read the papers of @CG_DESCENT@ to understand how
 -- you can tune these parameters.
 data TechParameters = TechParameters {
-    techDelta :: CDouble
+    techDelta :: Double
     -- ^ Wolfe line search parameter.  Defaults to @0.1@.
-    ,techSigma :: CDouble
+    ,techSigma :: Double
     -- ^ Wolfe line search parameter.  Defaults to @0.9@.
-    ,techGamma :: CDouble
+    ,techGamma :: Double
     -- ^ Decay factor for bracket interval width.  Defaults to
     -- @0.66@.
-    ,techRho :: CDouble
+    ,techRho :: Double
     -- ^ Growth factor when searching for initial bracketing
     -- interval.  Defaults to @5@.
-    ,techEta :: CDouble
+    ,techEta :: Double
     -- ^ Lower bound for the conjugate gradient update parameter
     -- @beta_k@ is @techEta * ||d||_2@.  Defaults to @0.01@.
-    ,techPsi0 :: CDouble
+    ,techPsi0 :: Double
     -- ^ Factor used in starting guess for iteration 1.  Defaults
     -- to @0.01@.
-    ,techPsi1 :: CDouble
+    ,techPsi1 :: Double
     -- ^ In performing a QuadStep, we evaluate the function at
     -- @psi1 * previous step@.  Defaults to @0.1@.
-    ,techPsi2 :: CDouble
+    ,techPsi2 :: Double
     -- ^ When starting a new CG iteration, our initial guess for
     -- the line search stepsize is @psi2 * previous step@.
     -- Defaults to @2@.
@@ -294,7 +294,7 @@ data Verbose =
 data LineSearch =
       ApproximateWolfe
       -- ^ Use approximate Wolfe line search.
-    | AutoSwitch CDouble
+    | AutoSwitch Double
       -- ^ Use ordinary Wolfe line search, switch to approximate
       -- Wolfe when
       --
@@ -306,7 +306,7 @@ data LineSearch =
 
 -- | Stop rules used to decided when to stop iterating.
 data StopRules =
-      DefaultStopRule CDouble
+      DefaultStopRule Double
       -- ^ @DefaultStopRule stop_fac@ stops when
       --
       -- > |g_k|_infty <= max(grad_tol, |g_0|_infty * stop_fac)
@@ -321,8 +321,8 @@ data StopRules =
 
 -- | How to calculate the estimated error in the function value.
 data EstimateError =
-      AbsoluteEpsilon CDouble
+      AbsoluteEpsilon Double
       -- ^ @AbsoluteEpsilon eps@ estimates the error as @eps@.
-    | RelativeEpsilon CDouble
+    | RelativeEpsilon Double
       -- ^ @RelativeEpsilon eps@ estimates the error as @eps * C_k@.
       deriving (Eq, Ord, Show, Read)
