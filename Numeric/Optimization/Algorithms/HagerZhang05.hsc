@@ -22,7 +22,7 @@
 --------------------------------------------------------------------------
 
 
-module Math.Optimization.Algorithms.HagerZhang05
+module Numeric.Optimization.Algorithms.HagerZhang05
     (-- * Main function
      -- $mainFunction
      optimize
