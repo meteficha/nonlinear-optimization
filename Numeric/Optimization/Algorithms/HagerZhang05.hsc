@@ -9,7 +9,7 @@
 --
 -- This module implements the algorithms described by Hager and
 -- Zhang [1].  We use bindings to @CG_DESCENT@ library by the same
--- authors, version 3.0 from 18/05/2008 [2].  The library code is
+-- authors, version 3.0 from 18\/05\/2008 [2].  The library code is
 -- also licensed under the terms of the GPL.
 --
 -- * [1] Hager, W. W. and Zhang, H.  /A new conjugate gradient/
