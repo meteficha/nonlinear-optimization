@@ -240,7 +240,7 @@ prepareG _ = error "HagerZhang05.prepareG: never here"
 
 
 
--- | Function calculating the both the value of the objective
+-- | Function calculating both the value of the objective
 -- function @f@ and its gradient at a point @x@.
 data Combined t where
     VCombined :: G.Vector v Double
