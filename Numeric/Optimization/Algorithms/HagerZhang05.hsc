@@ -30,6 +30,8 @@ module Numeric.Optimization.Algorithms.HagerZhang05
     ,Function(..)
     ,Gradient(..)
     ,Combined(..)
+    ,PointMVector
+    ,GradientMVector
      -- ** Kinds of function types
     ,Simple
     ,Mutable
@@ -135,6 +137,15 @@ data Simple
 -- | Phantom type for functions using mutable data.
 data Mutable
 
+-- | Mutable vector representing the point where the
+-- function\/gradient is begin evaluated.  This vector /should/
+-- /not/ be modified.
+type PointMVector m = SM.MVector (PrimState m) Double
+
+-- | Mutable vector representing where the gradient should be
+-- /written/.
+type GradientMVector m = SM.MVector (PrimState m) Double
+
 -- | Function calculating the value of the objective function @f@
 -- at a point @x@.
 data Function t where
@@ -142,7 +153,7 @@ data Function t where
               => (v Double -> Double)
               -> Function Simple
     MFunction :: (forall m. PrimMonad m
-                  => SM.MVector (PrimState m) Double
+                  => PointMVector m
                   -> m Double)
               -> Function Mutable
 
@@ -185,8 +196,8 @@ data Gradient t where
               => (v Double -> v Double)
               -> Gradient Simple
     MGradient :: (forall m. PrimMonad m
-                  => SM.MVector (PrimState m) Double
-                  -> SM.MVector (PrimState m) Double
+                  => PointMVector m
+                  -> GradientMVector m
                   -> m ())
               -> Gradient Mutable
 mutableG :: Gradient t -> Gradient Mutable
@@ -236,8 +247,8 @@ data Combined t where
               => (v Double -> (Double, v Double))
               -> Combined Simple
     MCombined :: (forall m. PrimMonad m
-                  => SM.MVector (PrimState m) Double
-                  -> SM.MVector (PrimState m) Double
+                  => PointMVector m
+                  -> GradientMVector m
                   -> m Double)
               -> Combined Mutable
 mutableC :: Combined t -> Combined Mutable
