@@ -100,7 +100,7 @@ optimize params grad_tol initial f g c = do
     bracket (mkCFunction cf) freeHaskellFunPtr $ \cf_ptr    ->
     bracket (mkCGradient cg) freeHaskellFunPtr $ \cg_ptr    ->
     bracket (mkCCombined cc) freeHaskellFunPtr $ \cc_ptr    ->
-    allocaArray (4*n)                          $ \work_ptr  -> do
+    allocateWorkSpace n                        $ \work_ptr  -> do
       -- Go to C land.
       poke param_ptr params
       ret <- cg_descent x_ptr (fromIntegral n)
@@ -112,6 +112,17 @@ optimize params grad_tol initial f g c = do
   -- Retrive solution and return.
   x' <- G.unsafeFreeze x
   return $ ret `seq` (x', ret, stats)
+
+-- | Allocates enough work space for CG_DESCENT.  If the number
+-- of dimensions is "small enough" then we allocate on the stack,
+-- otherwise we allocate via malloc.
+allocateWorkSpace :: Int -> (Ptr Double -> IO a) -> IO a
+allocateWorkSpace n
+    | size < threshold = allocaBytes size
+    | otherwise        = bracket (mallocBytes size) free
+    where
+      size = 4 * n * sizeOf (undefined :: Double)
+      threshold = 4096 -- gives room to 128 dimensions
 
 type CFunction = Ptr Double ->               CInt -> IO Double
 type CGradient = Ptr Double -> Ptr Double -> CInt -> IO ()
