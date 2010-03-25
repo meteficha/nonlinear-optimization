@@ -53,10 +53,12 @@ import qualified Data.Vector.Generic as G
 import qualified Data.Vector.Generic.Mutable as GM
 import qualified Data.Vector.Storable as S
 import qualified Data.Vector.Storable.Mutable as SM
+import Control.Applicative
 import Control.Exception (bracket)
 import Control.Monad.Primitive (PrimMonad(..))
 import Foreign
 import Foreign.C
+
 #include "cg_user.h"
 
 -- $mainFunction
@@ -168,20 +170,41 @@ data Function t where
                   -> m Double)
               -> Function Mutable
 
+
+
+-- | Copies the input array from a mutable storable vector to any
+-- pure vector.  Used to convert pure functions into mutable
+-- ones.
+copyInput :: (PrimMonad m, G.Vector v Double)
+          => SM.MVector (PrimState m) Double
+          -> m (v Double)
+copyInput mx = do
+  let s = GM.length mx
+  mz <- GM.new s
+  let go i | i > s     = return ()
+           | otherwise = GM.unsafeRead mx i >>=
+                         GM.unsafeWrite mz i >> go (i+1)
+  go 0
+  G.unsafeFreeze mz
+
+-- | Copies the output array from any pure vector to a mutable
+-- storable array.  Used to convert pure functions that return
+-- the gradient into mutable ones.
+copyOutput :: (PrimMonad m, G.Vector v Double)
+           => SM.MVector (PrimState m) Double
+           -> v Double
+           -> m ()
+copyOutput mret r = go 0
+  where
+    s = min (GM.length mret) (G.length r)
+    go i | i > s     = return ()
+         | otherwise = let !x = G.unsafeIndex r i
+                       in GM.unsafeWrite mret i x >> go (i+1)
+
+
+
 mutableF :: Function t -> Function Mutable
-mutableF (VFunction f) = MFunction f'
-    where
-      f' mx = do
-        -- Copy the input to an immutable vector.
-        let s = GM.length mx
-        mz <- GM.new s
-        let go i | i > s     = return ()
-                 | otherwise = GM.unsafeRead mx i >>=
-                               GM.unsafeWrite mz i >> go (i+1)
-        go 0
-        z <- G.unsafeFreeze mz
-        -- Run the user function.
-        return (f z)
+mutableF (VFunction f) = MFunction (\mx -> f <$> copyInput mx)
 mutableF (MFunction f) = MFunction f
 
 prepareF :: Function Mutable -> CFunction
@@ -214,24 +237,9 @@ data Gradient t where
 mutableG :: Gradient t -> Gradient Mutable
 mutableG (VGradient f) = MGradient f'
     where
-      f' mx mret = do
-        -- Copy the input to an immutable vector.
-        let s = GM.length mx
-        mz <- GM.new s
-        let go i | i > s     = return ()
-                 | otherwise = GM.unsafeRead mx i >>=
-                               GM.unsafeWrite mz i >> go (i+1)
-        go 0
-        z <- G.unsafeFreeze mz
-        -- Run the user function.
-        let !r = f z
-        -- Copy the output to an immutable vector
-        let s' = min s (G.length r)
-            go' i | i > s'    = return ()
-                  | otherwise = let !x = G.unsafeIndex r i
-                                in GM.unsafeWrite mret i x >> go (i+1)
-        go' 0
+      f' mx mret = f <$> copyInput mx >>= copyOutput mret
 mutableG (MGradient f) = MGradient f
+
 
 prepareG :: Gradient Mutable -> CGradient
 prepareG (MGradient f) =
@@ -266,23 +274,8 @@ mutableC :: Combined t -> Combined Mutable
 mutableC (VCombined f) = MCombined f'
     where
       f' mx mret = do
-        -- Copy the input to an immutable vector.
-        let s = GM.length mx
-        mz <- GM.new s
-        let go i | i > s     = return ()
-                 | otherwise = GM.unsafeRead mx i >>=
-                               GM.unsafeWrite mz i >> go (i+1)
-        go 0
-        z <- G.unsafeFreeze mz
-        -- Run the user function.
-        let !(v,r) = f z
-        -- Copy the output to an immutable vector
-        let s' = min s (G.length r)
-            go' i | i > s'    = return ()
-                  | otherwise = let !x = G.unsafeIndex r i
-                                in GM.unsafeWrite mret i x >> go (i+1)
-        go' 0
-        -- Return the value
+        (v,r) <- f <$> copyInput mx
+        copyOutput mret r
         return v
 mutableC (MCombined f) = MCombined f
 
