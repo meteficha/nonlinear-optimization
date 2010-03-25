@@ -104,7 +104,7 @@ optimize params grad_tol initial f g c = do
   -- Allocate everything.
   (ret, stats) <-
     SM.unsafeWith x                            $ \x_ptr     ->
-    alloca                                     $ \stats_ptr ->
+    allocaSet (Statistics 0 0 0 0 0)           $ \stats_ptr ->
     allocaSet params                           $ \param_ptr ->
     bracket (mkCFunction cf) freeHaskellFunPtr $ \cf_ptr    ->
     bracket (mkCGradient cg) freeHaskellFunPtr $ \cg_ptr    ->
@@ -123,7 +123,7 @@ optimize params grad_tol initial f g c = do
 
 -- | Allocates as 'alloca' and sets the memory area.
 allocaSet :: Storable a => a -> (Ptr a -> IO b) -> IO b
-allocaSet x f = alloca $ x_ptr -> do
+allocaSet x f = alloca $ \x_ptr -> do
                   poke x_ptr x
                   f x_ptr
 
