@@ -27,7 +27,7 @@ Description:
     matrices, although it would be possible to use something like
     @hmatrix@ easily.
     .
-    Currently only CM_DESCENT method is implemented.
+    Currently only CG_DESCENT method is implemented.
 Extra-Source-Files:
     CG_DESCENT-C-3.0/cg_descent.c,
     CG_DESCENT-C-3.0/cg_descent.h,
