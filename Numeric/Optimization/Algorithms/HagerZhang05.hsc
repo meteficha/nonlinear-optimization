@@ -212,8 +212,27 @@ prepareF (MFunction f) =
     \x_ptr n -> do
       let n' = fromIntegral n
       x_fptr <- newForeignPtr_ x_ptr
-      f (SM.unsafeFromForeignPtr x_fptr 0 n')
+      let x = SM.unsafeFromForeignPtr x_fptr 0 n'
+#ifdef DEBUG
+      putStr $ unlines [
+                  "--> function:",
+                  "      x: " ++ showV x]
+#endif
+      r <- f x
+#ifdef DEBUG
+      putStrLn $  "      r: " ++ show r
+#endif
+      return r
 prepareF _ = error "HagerZhang05.prepareF: never here"
+
+#ifdef DEBUG
+showV :: SM.IOVector Double -> String
+showV m = show $ go 0 (GM.length m)
+    where
+      go i n | i == n    = []
+             | otherwise = let !v = unsafePerformIO (GM.read m i)
+                           in v : go (i+1) n
+#endif
 
 
 
@@ -247,8 +266,17 @@ prepareG (MGradient f) =
       let n' = fromIntegral n
       x_fptr   <- newForeignPtr_ x_ptr
       ret_fptr <- newForeignPtr_ ret_ptr
-      f (SM.unsafeFromForeignPtr x_fptr   0 n')
-        (SM.unsafeFromForeignPtr ret_fptr 0 n')
+      let x = SM.unsafeFromForeignPtr x_fptr   0 n'
+          r = SM.unsafeFromForeignPtr ret_fptr 0 n'
+#ifdef DEBUG
+      putStr $ unlines [
+                  "--> gradient:",
+                  "      x: " ++ showV x]
+#endif
+      f x r
+#ifdef DEBUG
+      putStrLn $  "      r: " ++ showV r
+#endif
 prepareG _ = error "HagerZhang05.prepareG: never here"
 
 
@@ -285,8 +313,18 @@ prepareC (MCombined f) =
       let n' = fromIntegral n
       x_fptr   <- newForeignPtr_ x_ptr
       ret_fptr <- newForeignPtr_ ret_ptr
-      f (SM.unsafeFromForeignPtr x_fptr   0 n')
-        (SM.unsafeFromForeignPtr ret_fptr 0 n')
+      let x = SM.unsafeFromForeignPtr x_fptr   0 n'
+          r = SM.unsafeFromForeignPtr ret_fptr 0 n'
+#ifdef DEBUG
+      putStr $ unlines [
+                  "--> combined:",
+                  "      x: " ++ showV x]
+#endif
+      v <- f x r
+#ifdef DEBUG
+      putStrLn $  "      r: " ++ show v ++ ", " ++ showV r
+#endif
+      return v
 prepareC _ = error "HagerZhang05.prepareC: never here"
 
 -- | Combine two separated functions into a single, combined one.

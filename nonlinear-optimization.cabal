@@ -3,7 +3,7 @@ Build-Type:          Simple
 Tested-With:         GHC
 Category:            Math
 Name:                nonlinear-optimization
-Version:             0.3.1
+Version:             0.3.2
 Stability:           experimental
 License:             GPL
 License-File:        LICENSE
@@ -34,6 +34,10 @@ Extra-Source-Files:
     CG_DESCENT-C-3.0/cg_user.h,
     CG_DESCENT-C-3.0/README
 
+Flag Debug
+  Description: Enable some debug statements.
+  Default:     False
+
 Library
   Build-Depends:
     base >= 3 && < 5, vector >= 0.5 && < 0.6,
@@ -56,4 +60,5 @@ Library
   Build-Tools:     hsc2hs
   Extra-Libraries: m
   GHC-Options:     -Wall
-
+  if flag(Debug)
+    CPP-Options: -DDEBUG
