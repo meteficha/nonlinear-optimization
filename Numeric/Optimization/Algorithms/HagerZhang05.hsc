@@ -163,7 +163,7 @@ data Function t where
     VFunction :: G.Vector v Double
               => (v Double -> Double)
               -> Function Simple
-    MFunction :: (forall m. PrimMonad m
+    MFunction :: (forall m. (PrimMonad m, Functor m)
                   => PointMVector m
                   -> m Double)
               -> Function Mutable
@@ -206,7 +206,7 @@ data Gradient t where
     VGradient :: G.Vector v Double
               => (v Double -> v Double)
               -> Gradient Simple
-    MGradient :: (forall m. PrimMonad m
+    MGradient :: (forall m. (PrimMonad m, Functor m)
                   => PointMVector m
                   -> GradientMVector m
                   -> m ())
@@ -257,7 +257,7 @@ data Combined t where
     VCombined :: G.Vector v Double
               => (v Double -> (Double, v Double))
               -> Combined Simple
-    MCombined :: (forall m. PrimMonad m
+    MCombined :: (forall m. (PrimMonad m, Functor m)
                   => PointMVector m
                   -> GradientMVector m
                   -> m Double)
