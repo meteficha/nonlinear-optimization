@@ -122,7 +122,7 @@ optimize params grad_tol initial f g c = do
   return $ ret `seq` (x', ret, stats)
 
 -- | Allocates as 'alloca' and sets the memory area.
-allocaSet :: a -> (Ptr a -> IO b) -> IO b
+allocaSet :: Storable a => a -> (Ptr a -> IO b) -> IO b
 allocaSet x f = alloca $ x_ptr -> do
                   poke x_ptr x
                   f x_ptr
