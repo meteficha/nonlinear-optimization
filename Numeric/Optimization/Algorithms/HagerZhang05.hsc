@@ -181,7 +181,7 @@ copyInput :: (PrimMonad m, G.Vector v Double)
 copyInput mx = do
   let s = GM.length mx
   mz <- GM.new s
-  let go i | i > s     = return ()
+  let go i | i >= s    = return ()
            | otherwise = GM.unsafeRead mx i >>=
                          GM.unsafeWrite mz i >> go (i+1)
   go 0
@@ -197,7 +197,7 @@ copyOutput :: (PrimMonad m, G.Vector v Double)
 copyOutput mret r = go 0
   where
     s = min (GM.length mret) (G.length r)
-    go i | i > s     = return ()
+    go i | i >= s    = trace "               stop" $ return ()
          | otherwise = let !x = G.unsafeIndex r i
                        in GM.unsafeWrite mret i x >> go (i+1)
 
