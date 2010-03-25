@@ -59,6 +59,13 @@ import Control.Monad.Primitive (PrimMonad(..))
 import Foreign
 import Foreign.C
 
+#ifdef DEBUG
+import Debug.Trace (trace)
+#else
+trace :: String -> a -> a
+trace _ x = x
+#endif
+
 #include "cg_user.h"
 
 -- $mainFunction
@@ -179,13 +186,13 @@ copyInput :: (PrimMonad m, G.Vector v Double)
           => SM.MVector (PrimState m) Double
           -> m (v Double)
 copyInput mx = do
-  let s = GM.length mx
+  let s = trace "    copyInput start" $ GM.length mx
   mz <- GM.new s
   let go i | i >= s    = return ()
            | otherwise = GM.unsafeRead mx i >>=
                          GM.unsafeWrite mz i >> go (i+1)
   go 0
-  G.unsafeFreeze mz
+  trace "              stop" $ G.unsafeFreeze mz
 
 -- | Copies the output array from any pure vector to a mutable
 -- storable array.  Used to convert pure functions that return
@@ -194,7 +201,7 @@ copyOutput :: (PrimMonad m, G.Vector v Double)
            => SM.MVector (PrimState m) Double
            -> v Double
            -> m ()
-copyOutput mret r = go 0
+copyOutput mret r = go $ trace "    copyOutput start" $ 0
   where
     s = min (GM.length mret) (G.length r)
     go i | i >= s    = trace "               stop" $ return ()
