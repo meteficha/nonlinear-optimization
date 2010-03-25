@@ -105,13 +105,12 @@ optimize params grad_tol initial f g c = do
   (ret, stats) <-
     SM.unsafeWith x                            $ \x_ptr     ->
     alloca                                     $ \stats_ptr ->
-    alloca                                     $ \param_ptr ->
+    allocaSet params                           $ \param_ptr ->
     bracket (mkCFunction cf) freeHaskellFunPtr $ \cf_ptr    ->
     bracket (mkCGradient cg) freeHaskellFunPtr $ \cg_ptr    ->
     bracket (mkCCombined cc) freeHaskellFunPtr $ \cc_ptr    ->
     allocateWorkSpace n                        $ \work_ptr  -> do
       -- Go to C land.
-      poke param_ptr params
       ret <- cg_descent x_ptr (fromIntegral n)
                stats_ptr param_ptr grad_tol
                cf_ptr cg_ptr cc_ptr work_ptr
@@ -121,6 +120,12 @@ optimize params grad_tol initial f g c = do
   -- Retrive solution and return.
   x' <- G.unsafeFreeze x
   return $ ret `seq` (x', ret, stats)
+
+-- | Allocates as 'alloca' and sets the memory area.
+allocaSet :: a -> (Ptr a -> IO b) -> IO b
+allocaSet x f = alloca $ x_ptr -> do
+                  poke x_ptr x
+                  f x_ptr
 
 -- | Allocates enough work space for CG_DESCENT.  If the number
 -- of dimensions is "small enough" then we allocate on the stack,
