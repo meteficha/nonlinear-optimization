@@ -3,7 +3,7 @@ Build-Type:          Simple
 Tested-With:         GHC
 Category:            Math
 Name:                nonlinear-optimization
-Version:             0.3.2
+Version:             0.3.3
 Stability:           experimental
 License:             GPL
 License-File:        LICENSE
@@ -40,8 +40,8 @@ Flag Debug
 
 Library
   Build-Depends:
-    base >= 3 && < 5, vector >= 0.5 && < 0.6,
-    primitive >= 0.2 && < 0.3
+    base >= 3 && < 5, vector >= 0.5 && < 0.7,
+    primitive >= 0.2 && < 0.4
   Exposed-Modules:
     Numeric.Optimization.Algorithms.HagerZhang05
   Include-Dirs:
