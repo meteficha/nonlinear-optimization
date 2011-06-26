@@ -268,6 +268,10 @@ data Gradient t where
 mutableG :: Gradient t -> Gradient Mutable
 mutableG (VGradient f) = MGradient f'
     where
+      f' :: (PrimMonad m, Functor m) =>
+            PointMVector m
+         -> GradientMVector m
+         -> m ()
       f' mx mret = f <$> copyInput mx >>= copyOutput mret
 mutableG (MGradient f) = MGradient f
 
@@ -313,6 +317,10 @@ data Combined t where
 mutableC :: Combined t -> Combined Mutable
 mutableC (VCombined f) = MCombined f'
     where
+      f' :: (PrimMonad m, Functor m) =>
+            PointMVector m
+         -> GradientMVector m
+         -> m Double
       f' mx mret = do
         (v,r) <- f <$> copyInput mx
         copyOutput mret r
