@@ -235,7 +235,6 @@ prepareF (MFunction f) =
       putStrLn $  "      r: " ++ show r
 #endif
       return r
-prepareF _ = error "HagerZhang05.prepareF: never here"
 
 #ifdef DEBUG
 showV :: SM.IOVector Double -> String
@@ -293,7 +292,6 @@ prepareG (MGradient f) =
 #ifdef DEBUG
       putStrLn $  "      r: " ++ showV r
 #endif
-prepareG _ = error "HagerZhang05.prepareG: never here"
 
 
 
@@ -345,7 +343,6 @@ prepareC (MCombined f) =
       putStrLn $  "      r: " ++ show v ++ ", " ++ showV r
 #endif
       return v
-prepareC _ = error "HagerZhang05.prepareC: never here"
 
 -- | Combine two separated functions into a single, combined one.
 -- This is always a win for us since we save one jump from C to
@@ -353,7 +350,6 @@ prepareC _ = error "HagerZhang05.prepareC: never here"
 combine :: Function Mutable -> Gradient Mutable -> Combined Mutable
 combine (MFunction f) (MGradient g) =
     MCombined $ \mx mret -> g mx mret >> f mx
-combine _ _ = error "HagerZhang05.combine: never here"
 
 
 
