@@ -1,4 +1,4 @@
-Cabal-Version:       >= 1.2.3
+Cabal-Version:       >= 1.6
 Build-Type:          Simple
 Tested-With:         GHC
 Category:            Math
@@ -37,6 +37,10 @@ Extra-Source-Files:
 Flag Debug
   Description: Enable some debug statements.
   Default:     False
+
+Source-repository head
+  type: darcs
+  location: http://patch-tag.com/r/felipe/nonlinear-optimization
 
 Library
   Build-Depends:
