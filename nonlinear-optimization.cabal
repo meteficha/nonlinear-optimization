@@ -57,6 +57,7 @@ Library
     cg_user.h
   Extensions:
     CPP,
+    BangPatterns,
     ForeignFunctionInterface,
     EmptyDataDecls,
     GADTs,
