@@ -1,6 +1,6 @@
 ---------------------------------------------------------------------------
 -- | Module    : Numeric.Statistics.Dirichlet.Mixture
--- Copyright   : (c) 2009 Felipe Lessa
+-- Copyright   : (c) 2009-2011 Felipe Lessa
 -- License     : GPL
 --
 -- Maintainer  : felipe.lessa@gmail.com
