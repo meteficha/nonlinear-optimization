@@ -23,30 +23,30 @@
 
 
 module Numeric.Optimization.Algorithms.HagerZhang05
-    (-- * Main function
-     -- $mainFunction
-     optimize
-     -- ** User-defined function types
-    ,Function(..)
-    ,Gradient(..)
-    ,Combined(..)
-    ,PointMVector
-    ,GradientMVector
-     -- ** Kinds of function types
-    ,Simple
-    ,Mutable
-     -- * Result and statistics
-    ,Result(..)
-    ,Statistics(..)
-     -- * Options
-    ,defaultParameters
-    ,Parameters(..)
-    ,Verbose(..)
-    ,LineSearch(..)
-    ,StopRules(..)
-    ,EstimateError(..)
-     -- * Technical parameters
-    ,TechParameters(..)
+    ( -- * Main function
+      -- $mainFunction
+      optimize
+      -- ** User-defined function types
+    , Function(..)
+    , Gradient(..)
+    , Combined(..)
+    , PointMVector
+    , GradientMVector
+      -- ** Kinds of function types
+    , Simple
+    , Mutable
+      -- * Result and statistics
+    , Result(..)
+    , Statistics(..)
+      -- * Options
+    , defaultParameters
+    , Parameters(..)
+    , Verbose(..)
+    , LineSearch(..)
+    , StopRules(..)
+    , EstimateError(..)
+      -- * Technical parameters
+    , TechParameters(..)
     ) where
 
 import qualified Data.Vector.Generic as G
