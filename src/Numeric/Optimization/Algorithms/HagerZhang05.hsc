@@ -58,6 +58,7 @@ import Control.Exception (bracket)
 import Control.Monad.Primitive (PrimMonad(..))
 import Foreign
 import Foreign.C
+import qualified System.IO.Unsafe as Unsafe
 
 #ifdef DEBUG
 import Debug.Trace (trace)
@@ -241,7 +242,7 @@ showV :: SM.IOVector Double -> String
 showV m = show $ go 0 (GM.length m)
     where
       go i n | i == n    = []
-             | otherwise = let !v = unsafePerformIO (GM.read m i)
+             | otherwise = let !v = Unsafe.unsafePerformIO (GM.read m i)
                            in v : go (i+1) n
 #endif
 
@@ -440,7 +441,7 @@ instance Storable Statistics where
 -- and 'TechParameters' to see what are the defaults.
 defaultParameters :: Parameters
 defaultParameters =
-    unsafePerformIO $ do
+    Unsafe.unsafePerformIO $ do
       alloca $ \ptr -> do
         cg_default ptr
         peek ptr
