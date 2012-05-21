@@ -68,3 +68,4 @@ Library
   GHC-Options:     -Wall
   if flag(Debug)
     CPP-Options: -DDEBUG
+  hs-Source-Dirs: src/
