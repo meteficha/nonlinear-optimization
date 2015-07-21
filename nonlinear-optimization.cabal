@@ -40,7 +40,7 @@ Flag Debug
 
 Source-repository head
   type: darcs
-  location: http://patch-tag.com/r/felipe/nonlinear-optimization
+  location: https://github.com/meteficha/nonlinear-optimization
 
 Library
   Build-Depends:
