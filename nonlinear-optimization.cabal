@@ -39,7 +39,7 @@ Flag Debug
   Default:     False
 
 Source-repository head
-  type: darcs
+  type: git
   location: https://github.com/meteficha/nonlinear-optimization
 
 Library
