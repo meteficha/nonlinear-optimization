@@ -46,7 +46,7 @@ Library
   Build-Depends:
       base      >= 3   && < 5
     , primitive >= 0.2 && < 0.7
-    , vector    >= 0.5 && < 0.12
+    , vector    >= 0.5 && < 0.13
   Exposed-Modules:
     Numeric.Optimization.Algorithms.HagerZhang05
   Include-Dirs:
