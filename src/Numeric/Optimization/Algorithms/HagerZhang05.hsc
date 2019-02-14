@@ -59,6 +59,7 @@ import Control.Monad.Primitive (PrimMonad(..))
 import Foreign
 import Foreign.C
 import qualified System.IO.Unsafe as Unsafe
+import Prelude -- silence warning about import of Control.Applicative
 
 #ifdef DEBUG
 import Debug.Trace (trace)
