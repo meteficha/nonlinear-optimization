@@ -8,8 +8,7 @@ Stability:           experimental
 License:             GPL
 License-File:        LICENSE
 Copyright:           (c) 2010-2011 Felipe A. Lessa and William W. Hager
-Author:              Felipe A. Lessa (Haskell code),
-		     William W. Hager and Hongchao Zhang (CM_DESCENT code).
+Author:              Felipe A. Lessa (Haskell code), William W. Hager and Hongchao Zhang (CM_DESCENT code).
 Maintainer:          Felipe A. Lessa <felipe.lessa@gmail.com>
 Synopsis:            Various iterative algorithms for optimization of nonlinear functions.
 Description:
