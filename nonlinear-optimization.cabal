@@ -3,7 +3,7 @@ Build-Type:          Simple
 Tested-With:         GHC
 Category:            Math
 Name:                nonlinear-optimization
-Version:             0.3.10
+Version:             0.3.11
 Stability:           experimental
 License:             GPL
 License-File:        LICENSE
