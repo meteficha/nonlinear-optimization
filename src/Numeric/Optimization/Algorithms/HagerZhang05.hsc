@@ -17,7 +17,7 @@
 --   /search./ Society of Industrial and Applied Mathematics
 --   Journal on Optimization, 16 (2005), 170-192.
 --
--- * [2] <http://www.math.ufl.edu/~hager/papers/CG/CG_DESCENT-C-3.0.tar.gz>
+-- * [2] <https://www.math.lsu.edu/~hozhang/SoftArchive/CG_DESCENT-C-3.0.tar.gz>
 --
 --------------------------------------------------------------------------
 
