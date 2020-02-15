@@ -1,5 +1,5 @@
 ---------------------------------------------------------------------------
--- | Module    : Numeric.Statistics.Dirichlet.Mixture
+-- | Module    : Numeric.Optimization.Algorithms.HagerZhang05
 -- Copyright   : (c) 2009-2011 Felipe Lessa
 -- License     : GPL
 --
