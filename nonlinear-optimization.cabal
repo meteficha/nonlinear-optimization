@@ -32,6 +32,8 @@ Description:
     you can use
     <https://hackage.haskell.org/package/nonlinear-optimization-ad nonlinear-optimization-ad> package or
     <https://hackage.haskell.org/package/nonlinear-optimization-backprop nonlinear-optimization-backprop> package.
+Homepage:	https://github.com/meteficha/nonlinear-optimization
+Bug-Reports:	https://github.com/meteficha/nonlinear-optimization/issues
 Extra-Source-Files:
     CG_DESCENT-C-3.0/cg_descent.c,
     CG_DESCENT-C-3.0/cg_descent.h,
