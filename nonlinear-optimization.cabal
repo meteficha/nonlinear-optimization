@@ -27,6 +27,11 @@ Description:
     @hmatrix@ easily.
     .
     Currently only CG_DESCENT method is implemented.
+    .
+    If you want to use automatic differentiation to avoid hand-writing gradient functions,
+    you can use
+    <https://hackage.haskell.org/package/nonlinear-optimization-ad nonlinear-optimization-ad> package or
+    <https://hackage.haskell.org/package/nonlinear-optimization-backprop nonlinear-optimization-backprop> package.
 Extra-Source-Files:
     CG_DESCENT-C-3.0/cg_descent.c,
     CG_DESCENT-C-3.0/cg_descent.h,
